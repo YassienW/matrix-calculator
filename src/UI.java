@@ -1,5 +1,3 @@
-
-
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -10,9 +8,8 @@ import javax.swing.text.NumberFormatter;
 //NEED TO REPLACE THE SHITTY MAX SIZED ARRAY WITH AN ARRAY LIST AND CHANGE ACCORDIGNLY
 //ITERATION FOR LOOPS WITH FOR EACH LOOPS. Also separate logic from UI (sux2sucktbh)
 @SuppressWarnings("serial")
-public class UI extends JFrame implements ActionListener{
-	private int currentRows = 3, currentColumns = 3;
-	private ArrayList<ArrayList<Double>> matrix = new ArrayList<ArrayList<Double>>();
+public class UI extends JFrame{
+	private Matrix matrix;
 	//using Integer since ComboBox doesn't take primitives
 	private Integer[] sizeOptions = {1,2,3,4,5};
 	private ArrayList<ArrayList<JFormattedTextField>> inputMatrix = new ArrayList<ArrayList<JFormattedTextField>>();
@@ -25,7 +22,6 @@ public class UI extends JFrame implements ActionListener{
 	private JCheckBox option1, option2;
 	private JTextArea console;
 	private JScrollPane consoleContainer;
-	private OperationsManager operations = new OperationsManager(this);
 	private DocXManager docX = new DocXManager(this);
 	
 	public UI(){
@@ -170,17 +166,75 @@ public class UI extends JFrame implements ActionListener{
 		revalidate();
 		repaint();
 		
-		rowsSelector.addActionListener(this);
-		columnsSelector.addActionListener(this);
-		clear.addActionListener(this);
-		add.addActionListener(this);
-		swap.addActionListener(this);
-		multiply.addActionListener(this);
-		multiplyAndAdd.addActionListener(this);
-		reduceMatrix.addActionListener(this);
-		export.addActionListener(this);
+		rowsSelector.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				System.out.print(((JComboBox<Integer>)e.getSource()).getSelectedItem());
+				matrix.setDimensions(1, 1);
+				buildMatrix();
+			}
+		});
+		columnsSelector.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				System.out.print(((JComboBox<Integer>)e.getSource()).getSelectedItem());
+				matrix.setDimensions(1, 1);
+				buildMatrix();
+			}
+		});
+		clear.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				for(ArrayList<JFormattedTextField> list : inputMatrix){
+					for(JFormattedTextField f : list){
+						f.setText("");
+					}
+				}
+				console.setText("");
+			}
+		});
+		add.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				matrix.addMultipleOfRowToRow((int)addFrom.getSelectedItem(), (int)addTo.getSelectedItem(), 1);
+			}
+		});
+		swap.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				matrix.swapRowWithRow((int)swapFrom.getSelectedItem(), (int)swapTo.getSelectedItem());	
+			}
+		});
+		multiply.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				if(multiplyBy.getText().contains("/")){
+					matrix.multiplyRow((int)multiplyFrom.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal());
+				}else{
+					matrix.multiplyRow((int)multiplyFrom.getSelectedItem(), Double.valueOf(multiplyBy.getText()));
+				}
+			}
+		});
+		multiplyAndAdd.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				if(multiplyBy.getText().contains("/")){
+					matrix.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal());
+				}else{
+					matrix.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), Double.valueOf(multiplyBy.getText()));		
+				}
+			}
+		});
+		reduceMatrix.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				matrix.reduce();
+			}
+		});
+		export.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				JFileChooser fileChooser = new JFileChooser();
+				if(fileChooser.showOpenDialog(((Component)e.getSource()).getParent()) == JFileChooser.APPROVE_OPTION){
+					docX.setDocxFile(fileChooser.getSelectedFile());
+				}
+			}
+		});
 	}
-
+	public void buildMatrix(){
+	
+	}
 	public void actionPerformed(ActionEvent e) {
 		Object buttonPressed = e.getSource();
 		
@@ -222,51 +276,6 @@ public class UI extends JFrame implements ActionListener{
 			}
 			//resize the operation combo boxes to fit the row number that the user picked
 			resizeComboBoxes();
-		}else if(buttonPressed.equals(clear)){
-			for(ArrayList<JFormattedTextField> list : inputMatrix){
-				for(JFormattedTextField f : list){
-					f.setText("");
-				}
-			}
-			console.setText("");
-			
-		}else if(buttonPressed.equals(add)){
-			textfieldToMatrix(matrix, inputMatrix);
-			operations.addMultipleOfRowToRow((int)addFrom.getSelectedItem(), (int)addTo.getSelectedItem(), 1, matrix);
-			matrixToTextfield(matrix, inputMatrix);
-			
-		}else if(buttonPressed.equals(swap)){
-			textfieldToMatrix(matrix, inputMatrix);
-			operations.swapRowWithRow((int)swapFrom.getSelectedItem(), (int)swapTo.getSelectedItem(), matrix);
-			matrixToTextfield(matrix, inputMatrix);		
-			
-		}else if(buttonPressed.equals(multiply)){
-			textfieldToMatrix(matrix, inputMatrix);
-			if(multiplyBy.getText().contains("/")){
-				operations.multiplyRow((int)multiplyFrom.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal(), matrix);
-			}else{
-				operations.multiplyRow((int)multiplyFrom.getSelectedItem(), Double.valueOf(multiplyBy.getText()), matrix);
-			}
-			matrixToTextfield(matrix, inputMatrix);
-			
-		}else if(buttonPressed.equals(multiplyAndAdd)){	
-			textfieldToMatrix(matrix, inputMatrix);
-			if(multiplyBy.getText().contains("/")){
-				operations.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal(), matrix);
-			}else{
-				operations.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), Double.valueOf(multiplyBy.getText()), matrix);		
-			}
-			matrixToTextfield(matrix, inputMatrix);	
-		
-		}else if(buttonPressed.equals(export)){
-			JFileChooser fileChooser = new JFileChooser();
-			if(fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
-				docX.setDocxFile(fileChooser.getSelectedFile());
-			}
-		}else if(buttonPressed.equals(reduceMatrix)){
-			textfieldToMatrix(matrix, inputMatrix);
-			operations.reduceMatrix(matrix);
-			matrixToTextfield(matrix, inputMatrix);
 		}
 	}
 	
