@@ -1,13 +1,13 @@
-
-
+import java.io.File;
 import java.util.ArrayList;
 
 import javax.swing.JFormattedTextField;
 
 public class OperationsManager{
 	private UI ui = new UI(this);
-	private DocXManager docX = new DocXManager(ui);
+	private DocXManager docX = new DocXManager();
 	private Matrix matrix = new Matrix();
+	private boolean docXOn = false;
 	
 	public OperationsManager() {
 
@@ -30,36 +30,56 @@ public class OperationsManager{
 	}
 	public void addMultipleOfRowToRow(int row1, int row2, double value){
 		updateMatrix(ui.getInputMatrix());
+		matrix.addMultipleOfRowToRow(row1, row2, value);
 		//if the value = 1, change the output text, since the functionality is different
 		if(value == 1){
-			//ui.printStringToConsole("Add Row " + row1 + " to Row " + row2);
-			//ui.toDocx(String.format("R%d + R%d", row1, row2));
+			ui.printStringToConsole("Add Row " + row1 + " to Row " + row2);
+			toDocx(String.format("R%d + R%d", row1, row2));
 		}else{
-			//ui.printStringToConsole("Multipy Row " + row1 + " By " + value + " and add it to Row " + row2);
-			//ui.printStringToConsole("Multipy Row " + row1 + " By " + (int)value + " and add it to Row " + row2);
-			//ui.toDocx(String.format("R%d x R%s + R%d", row1, String.valueOf(value), row2));
+			ui.printStringToConsole("Multipy Row " + row1 + " By " + (int)value + " and add it to Row " + row2);
+			toDocx(String.format("R%d x R%s + R%d", row1, String.valueOf(value), row2));
 		}
-		//ui.printMatrixToConsole(matrix);
+		ui.printMatrixToConsole(matrix);
 		ui.update(matrix);
 	}
 	public void multiplyRow(int row, double value){
 		updateMatrix(ui.getInputMatrix());
 		if(value % 1 == 0){
-			//ui.printStringToConsole("Multipy Row " + row + " By " + (int)value);
+			ui.printStringToConsole("Multipy Row " + row + " By " + (int)value);
 		}else{
-			//ui.printStringToConsole("Multipy Row " + row + " By " + Fraction.valueOf(value));
+			ui.printStringToConsole("Multipy Row " + row + " By " + Fraction.valueOf(value));
 		}	
 		matrix.multiplyRow(row, value);
-		//ui.printMatrixToConsole(matrix);
-		//ui.toDocx(String.format("R%d x %s", row, String.valueOf(value)));
+		ui.printMatrixToConsole(matrix);
+		toDocx(String.format("R%d x %s", row, String.valueOf(value)));
 		ui.update(matrix);
 	}
 	public void swapRowWithRow(int row1, int row2){
 		updateMatrix(ui.getInputMatrix());
 		matrix.swapRowWithRow(row1, row2);
-		//ui.printStringToConsole("Swap Row " + row1 + " With Row " + row2);
-		//ui.printMatrixToConsole(matrix);
-		//ui.toDocx(String.format("R%d <-> R%d", row1, row2));
+		ui.printStringToConsole("Swap Row " + row1 + " With Row " + row2);
+		ui.printMatrixToConsole(matrix);
+		toDocx(String.format("R%d <-> R%d", row1, row2));
 		ui.update(matrix);
+	}
+	public void reduce(){
+		updateMatrix(ui.getInputMatrix());
+		matrix.reduce();
+		ui.update(matrix);
+	}
+	public void setDocxFile(File f){
+		new Thread("Non EDT"){
+			public void run(){
+				ui.printStringToConsole(docX.setDocxFile(f));
+			}
+		}.start();
+	}
+	public void setDocxOn(boolean isOn){
+		this.docXOn = isOn;
+	}
+	public void toDocx(String s){
+		if(docXOn){
+			docX.addMatrix(matrix, s);
+		}
 	}
 }

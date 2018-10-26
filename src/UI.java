@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.text.NumberFormatter;
 
-@SuppressWarnings("serial")
 public class UI extends JFrame{
 	//using Integer since ComboBox doesn't take primitives
 	private Integer[] sizeOptions = {1,2,3,4,5};
@@ -19,6 +18,7 @@ public class UI extends JFrame{
 	private JCheckBox option1, option2;
 	private JTextArea console;
 	private JScrollPane consoleContainer;
+	private JFileChooser fileChooser = new JFileChooser();
 	
 	public UI(OperationsManager opsManager){
 		ArrayList<Image> icons = new ArrayList<Image>();
@@ -134,14 +134,12 @@ public class UI extends JFrame{
 		
 		rowsSelector.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				JComboBox<?> cb = (JComboBox<?>)e.getSource();
-				opsManager.setRows((int)cb.getSelectedItem());
+				opsManager.setRows((int)rowsSelector.getSelectedItem());
 			}
 		});
 		columnsSelector.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				JComboBox<?> cb = (JComboBox<?>)e.getSource();
-				opsManager.setColumns((int)cb.getSelectedItem());
+				opsManager.setColumns((int)columnsSelector.getSelectedItem());
 			}
 		});
 		clear.addActionListener(new ActionListener(){
@@ -184,17 +182,19 @@ public class UI extends JFrame{
 		});
 		reduceMatrix.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				/*updateMatrix();
-				matrix.reduce();
-				updateUI();*/
+				opsManager.reduce();
 			}
 		});
 		export.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				JFileChooser fileChooser = new JFileChooser();
 				if(fileChooser.showOpenDialog(((Component)e.getSource()).getParent()) == JFileChooser.APPROVE_OPTION){
-					//docX.setDocxFile(fileChooser.getSelectedFile());
+					opsManager.setDocxFile(fileChooser.getSelectedFile());opsManager.setDocxFile(fileChooser.getSelectedFile());
 				}
+			}
+		});
+		option2.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				opsManager.setDocxOn(option2.isSelected());
 			}
 		});
 	}
@@ -276,22 +276,20 @@ public class UI extends JFrame{
 			}
 		}
 	}
-	
 	//prints a string to the console
 	public void printStringToConsole(String s){
 		console.append(s + "\n");
 	}
-	
-	//prints the contents of the text fields to the console
-	public void printMatrixToConsole(ArrayList<ArrayList<Double>> matrix){
+	//prints the contents of the given Matrix object to the console
+	public void printMatrixToConsole(Matrix matrix){
 		if(option1.isSelected()){
-			for(ArrayList<Double> arr : matrix){
+			for(int i = 0; i < matrix.getRows(); i++){
 				console.append("\t |   ");
-				for(Double d : arr){
-					if(d % 1 == 0){
-						console.append(String.valueOf(d.intValue()) + "   ");
+				for(int j = 0; j < matrix.getColumns(); j++){
+					if(matrix.getValue(i, j) % 1 == 0){
+						console.append(String.valueOf((int)matrix.getValue(i, j)) + "   ");
 					}else{
-						console.append(new Fraction(d).toString() + "   ");
+						console.append(new Fraction(matrix.getValue(i, j)).toString() + "   ");
 						//console.append(matrix[i][j] + "   ");
 					}	
 				}
@@ -301,9 +299,4 @@ public class UI extends JFrame{
 			console.setCaretPosition(console.getDocument().getLength());
 		}
 	}
-/*	public void toDocx(String s){
-		if(option2.isSelected()){
-			docX.addMatrix(matrix, s);
-		}
-	}*/
 }
