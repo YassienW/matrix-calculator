@@ -9,7 +9,7 @@ import javax.swing.text.NumberFormatter;
 //ITERATION FOR LOOPS WITH FOR EACH LOOPS. Also separate logic from UI (sux2sucktbh)
 @SuppressWarnings("serial")
 public class UI extends JFrame{
-	private Matrix matrix;
+	private Matrix matrix = new Matrix();
 	//using Integer since ComboBox doesn't take primitives
 	private Integer[] sizeOptions = {1,2,3,4,5};
 	private ArrayList<ArrayList<JFormattedTextField>> inputMatrix = new ArrayList<ArrayList<JFormattedTextField>>();
@@ -29,6 +29,8 @@ public class UI extends JFrame{
 		icons.add(new ImageIcon(ClassLoader.getSystemResource("MatrixIconLarge.png")).getImage());
 		icons.add(new ImageIcon(ClassLoader.getSystemResource("MatrixIconSmall.png")).getImage());
 		
+		formatter.setValueClass(Double.class);
+		
 		setTitle("Matrix Calculator");
 		setSize(425,500);
 		setResizable(false);
@@ -46,7 +48,6 @@ public class UI extends JFrame{
 		/*we use a flow layout (gridFixer) to contain the grid layout(matrixArea) in order to prevent grid layout from 
 		resizing the components to maximum size. Set preferred size is used to set the component size*/
 		matrixArea = new JPanel();
-		matrixArea.setLayout(new GridLayout(currentRows, currentColumns, 0, 0));
 		gridFixer = new JPanel();
 		gridFixer.setLayout(new FlowLayout());
 		//width -1 to make space for the automatic padding, otherwise they intersect
@@ -58,12 +59,12 @@ public class UI extends JFrame{
 		
 		//initialize and add the matrix size selection combo boxes, and their respective labels 
 		rowsSelector = new JComboBox<Integer>(sizeOptions);
-		rowsSelector.setSelectedItem(currentRows);
+		rowsSelector.setSelectedItem(null);
 		selectRow = new JLabel("Rows:");
 		controls.add(selectRow);
 		controls.add(rowsSelector);
 		columnsSelector = new JComboBox<Integer>(sizeOptions);
-		columnsSelector.setSelectedItem(currentColumns);
+		columnsSelector.setSelectedItem(1);
 		selectColumn = new JLabel("Columns:");
 		controls.add(selectColumn);
 		controls.add(columnsSelector);
@@ -81,40 +82,12 @@ public class UI extends JFrame{
 		option2 = new JCheckBox("Save operations to Docx", false);
 		controls.add(option2);
 		
-		formatter.setValueClass(Double.class);
-		
-		//loop to initialize the matrix input fields
-		for(int i = 0; i < currentRows; i++){
-			inputMatrix.add(new ArrayList<JFormattedTextField>());
-			for(int j = 0; j < currentColumns; j++){
-				inputMatrix.get(i).add(new JFormattedTextField(formatter)/*{
-					public void processFocusEvent(final FocusEvent e) {
-						//THIS FIXES THE BUG WHERE IT DOESNT ACCEPT THE DELETION OF VALUES, SINCE THE
-						//VALUE IN THE FIELD BECOMES NULL/"" AFTER DELETION, WHICH IS NOT ACCEPTED BY THE FORMATTER (Double)
-				        if (e.isTemporary()) {
-				            return;
-				        }
-				        if (e.getID() == FocusEvent.FOCUS_LOST) {
-				            if (getText() == null || getText().isEmpty()) {
-				                setValue(null);
-				            }
-				        }
-				        super.processFocusEvent(e);
-				    }
-				}*/);
-				inputMatrix.get(i).get(j).setPreferredSize(new Dimension(40,40));
-				inputMatrix.get(i).get(j).setFont(new Font("OCR A Extended", Font.BOLD, 16));
-				inputMatrix.get(i).get(j).setHorizontalAlignment(JTextField.CENTER);
-				matrixArea.add(inputMatrix.get(i).get(j));
-			}
-		}
-		
 		//initialize and add buttons, fields, and labels to operations panel
 		add = new JButton("Add");
 		add.setPreferredSize(new Dimension(66,25));
-		addFrom = new JComboBox<Integer>(sizeOptions);
+		addFrom = new JComboBox<Integer>();
 		to = new JLabel("To");
-		addTo = new JComboBox<Integer>(sizeOptions);
+		addTo = new JComboBox<Integer>();
 		operationsPanel.add(add);
 		operationsPanel.add(addFrom);
 		operationsPanel.add(to);
@@ -122,9 +95,9 @@ public class UI extends JFrame{
 		
 		swap = new JButton("Swap");
 		swap.setPreferredSize(new Dimension(66,25));
-		swapFrom = new JComboBox<Integer>(sizeOptions);
+		swapFrom = new JComboBox<Integer>();
 		with = new JLabel("With");
-		swapTo = new JComboBox<Integer>(sizeOptions);
+		swapTo = new JComboBox<Integer>();
 		operationsPanel.add(swap);
 		operationsPanel.add(swapFrom);
 		operationsPanel.add(with);
@@ -133,7 +106,7 @@ public class UI extends JFrame{
 		multiply = new JButton("Multiply");
 		multiply.setPreferredSize(new Dimension(66,25));
 		multiply.setMargin(new Insets(0,0,0,0));
-		multiplyFrom = new JComboBox<Integer>(sizeOptions);
+		multiplyFrom = new JComboBox<Integer>();
 		by = new JLabel("By");
 		multiplyBy = new JTextField();
 		multiplyBy.setColumns(3);
@@ -145,7 +118,7 @@ public class UI extends JFrame{
 		
 		multiplyAndAdd = new JButton("Multiply & Add");
 		to2 = new JLabel("To");
-		multiplyTo = new JComboBox<Integer>(sizeOptions);
+		multiplyTo = new JComboBox<Integer>();
 		operationsPanel.add(multiplyAndAdd);
 		operationsPanel.add(to2);
 		operationsPanel.add(multiplyTo);
@@ -168,16 +141,16 @@ public class UI extends JFrame{
 		
 		rowsSelector.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				System.out.print(((JComboBox<Integer>)e.getSource()).getSelectedItem());
-				matrix.setDimensions(1, 1);
-				buildMatrix();
+				JComboBox<?> cb = (JComboBox<?>)e.getSource();
+				matrix.setDimensions((int)cb.getSelectedItem(), matrix.getColumns());
+				buildUI();
 			}
 		});
 		columnsSelector.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				System.out.print(((JComboBox<Integer>)e.getSource()).getSelectedItem());
-				matrix.setDimensions(1, 1);
-				buildMatrix();
+				JComboBox<?> cb = (JComboBox<?>)e.getSource();
+				matrix.setDimensions(matrix.getRows(), (int)cb.getSelectedItem());
+				buildUI();
 			}
 		});
 		clear.addActionListener(new ActionListener(){
@@ -192,35 +165,45 @@ public class UI extends JFrame{
 		});
 		add.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
+				updateMatrix();
 				matrix.addMultipleOfRowToRow((int)addFrom.getSelectedItem(), (int)addTo.getSelectedItem(), 1);
+				updateUI();
 			}
 		});
 		swap.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				matrix.swapRowWithRow((int)swapFrom.getSelectedItem(), (int)swapTo.getSelectedItem());	
+				updateMatrix();
+				matrix.swapRowWithRow((int)swapFrom.getSelectedItem(), (int)swapTo.getSelectedItem());
+				updateUI();
 			}
 		});
 		multiply.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
+				updateMatrix();
 				if(multiplyBy.getText().contains("/")){
 					matrix.multiplyRow((int)multiplyFrom.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal());
 				}else{
 					matrix.multiplyRow((int)multiplyFrom.getSelectedItem(), Double.valueOf(multiplyBy.getText()));
 				}
+				updateUI();
 			}
 		});
 		multiplyAndAdd.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
+				updateMatrix();
 				if(multiplyBy.getText().contains("/")){
 					matrix.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal());
 				}else{
 					matrix.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), Double.valueOf(multiplyBy.getText()));		
 				}
+				updateUI();
 			}
 		});
 		reduceMatrix.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
+				updateMatrix();
 				matrix.reduce();
+				updateUI();
 			}
 		});
 		export.addActionListener(new ActionListener(){
@@ -232,83 +215,71 @@ public class UI extends JFrame{
 			}
 		});
 	}
-	public void buildMatrix(){
-	
-	}
-	public void actionPerformed(ActionEvent e) {
-		Object buttonPressed = e.getSource();
-		
-		if(buttonPressed.equals(rowsSelector) || buttonPressed.equals(columnsSelector)){
-			//set current rows = the rows selected via the combo box
-			currentRows = (int)rowsSelector.getSelectedItem();
-			currentColumns = (int)columnsSelector.getSelectedItem();
-			printStringToConsole("Size Change, Rows = " + currentRows + " Columns = " + currentColumns);
-			//remove all matrix input fields
-			matrixArea.removeAll();
-			matrixArea.revalidate();
-			matrixArea.repaint();	
-			//set up the gridLayout with new matrix size and reconstruct the matrix fields 
-			matrixArea.setLayout(new GridLayout(currentRows, currentColumns, 0, 0));
-			inputMatrix.removeAll(inputMatrix);
-			for(int i = 0; i < 	currentRows; i++){
-				inputMatrix.add(new ArrayList<JFormattedTextField>());
-				for(int j = 0; j < currentColumns; j++){
-					inputMatrix.get(i).add(new JFormattedTextField(formatter)/*{
-						public void processFocusEvent(final FocusEvent e){
-							//THIS FIXES THE BUG WHERE IT DOESNT ACCEPT THE DELETION OF VALUES, SINCE THE
-							//VALUE IN THE FIELD BECOMES NULL/"" AFTER DELETION, WHICH IS NOT ACCEPTED BY THE FORMATTER (Double)
-					        if (e.isTemporary()) {
-					            return;
-					        }
-					        if (e.getID() == FocusEvent.FOCUS_LOST) {
-					            if (getText() == null || getText().isEmpty()) {
-					                setValue(null);
-					            }
-					        }
-					        super.processFocusEvent(e);
-					    }
-					}*/);
-					inputMatrix.get(i).get(j).setPreferredSize(new Dimension(40,40));
-					inputMatrix.get(i).get(j).setFont(new Font("OCR A Extended", Font.BOLD, 16));
-					inputMatrix.get(i).get(j).setHorizontalAlignment(JTextField.CENTER);
-					matrixArea.add(inputMatrix.get(i).get(j));
-				}
-			}
-			//resize the operation combo boxes to fit the row number that the user picked
-			resizeComboBoxes();
-		}
-	}
-	
-	//copies the text field array to the BigDecimal array to perform operations
-	public void textfieldToMatrix(ArrayList<ArrayList<Double>> matrix, ArrayList<ArrayList<JFormattedTextField>> textFieldArray){
-		matrix.removeAll(matrix);
-		for(int i = 0; i < 	currentRows; i++){
-			matrix.add(new ArrayList<Double>());
-			for(int j = 0; j < currentColumns; j++){
-				matrix.get(i).add(Double.valueOf(textFieldArray.get(i).get(j).getText()));
-			}
-		}
-	}
+	//builds the matrix object data into the UI
+	public void buildUI(){
+		//remove all matrix input fields
+		matrixArea.removeAll();
+		matrixArea.revalidate();
+		matrixArea.repaint();	
+		//set up the gridLayout with new matrix size and reconstruct the matrix fields 
+		matrixArea.setLayout(new GridLayout(matrix.getRows(), matrix.getColumns(), 0, 0));
+		inputMatrix.removeAll(inputMatrix);
+		for(int i = 0; i < 	matrix.getRows(); i++){
+			inputMatrix.add(new ArrayList<JFormattedTextField>());
+			for(int j = 0; j < matrix.getColumns(); j++){
+				inputMatrix.get(i).add(new JFormattedTextField(formatter));/*{
+					public void processFocusEvent(final FocusEvent e){
+						//THIS FIXES THE BUG WHERE IT DOESNT ACCEPT THE DELETION OF VALUES, SINCE THE
+						//VALUE IN THE FIELD BECOMES NULL/"" AFTER DELETION, WHICH IS NOT ACCEPTED BY THE FORMATTER (Double)
+				        if (e.isTemporary()) {
+				            return;
+				        }
+				        if (e.getID() == FocusEvent.FOCUS_LOST) {
+				            if (getText() == null || getText().isEmpty()) {
+				                setValue(null);
+				            }
+				        }
+				        super.processFocusEvent(e);
+				    }
+				});*/
+				inputMatrix.get(i).get(j).setPreferredSize(new Dimension(40,40));
+				inputMatrix.get(i).get(j).setFont(new Font("OCR A Extended", Font.BOLD, 16));
+				inputMatrix.get(i).get(j).setHorizontalAlignment(JTextField.CENTER);
+				matrixArea.add(inputMatrix.get(i).get(j));
+ 			}
+ 		}
+		//resize the operation combo boxes to fit the row number that the user picked
+		resizeComboBoxes();
+ 	}
+	public void updateMatrix(){
+		for(int i = 0; i < 	matrix.getRows(); i++){
+			for(int j = 0; j < matrix.getColumns(); j++){
+				matrix.setValue(i, j, Double.valueOf(inputMatrix.get(i).get(j).getText()));
+ 			}
+ 		}
+ 	}
 	
 	//copies the values back to the text field array for after required operations are done
-	public void matrixToTextfield(ArrayList<ArrayList<Double>> matrix, ArrayList<ArrayList<JFormattedTextField>> textFieldArray){
-		for(int i = 0; i <  matrix.size(); i++){
-			for(int j = 0; j < matrix.get(i).size(); j++){
-				//if the value isn't an irrational number, convert to int first then to string, to remove the decimal point
-				if(matrix.get(i).get(j) % 1 == 0){
-					textFieldArray.get(i).get(j).setText(String.valueOf(matrix.get(i).get(j).intValue()));
-				}else{			
-					textFieldArray.get(i).get(j).setText(String.valueOf(matrix.get(i).get(j)));
-				}
-			}
-		}
-	}
+	//updates the UI with the data from the matrix object
+	public void updateUI(){
+		for(int i = 0; i <  matrix.getRows(); i++){
+			for(int j = 0; j < matrix.getColumns(); j++){
+				inputMatrix.get(i).get(j).setText(String.valueOf(matrix.getValue(i, j)));
+ 				//if the value isn't an irrational number, convert to int first then to string, to remove the decimal point
+				if(matrix.getValue(i, j) % 1 == 0){
+					inputMatrix.get(i).get(j).setText(String.valueOf((int)matrix.getValue(i, j)));
+ 				}else{			
+ 					inputMatrix.get(i).get(j).setText(String.valueOf(matrix.getValue(i, j)));
+ 				}
+ 			}
+ 		}
+ 	}
 	
 	//changes the size of the selection combo boxes to reflect the changes in matrix size
 	public void resizeComboBoxes(){
 		//if the selection list is smaller than the current rows selected by the user, add more items, else remove items
-		if(addFrom.getItemCount() < currentRows){
-			while(addFrom.getItemCount() != currentRows){
+		if(addFrom.getItemCount() < matrix.getRows()){
+			while(addFrom.getItemCount() != matrix.getRows()){
 				addFrom.addItem(addFrom.getItemCount() + 1);
 				addTo.addItem(addTo.getItemCount() + 1);
 				swapFrom.addItem(swapFrom.getItemCount() + 1);
@@ -317,7 +288,7 @@ public class UI extends JFrame{
 				multiplyTo.addItem(multiplyTo.getItemCount()+ 1);
 			}
 		}else{
-			while(addFrom.getItemCount() != currentRows){
+			while(addFrom.getItemCount() != matrix.getRows()){
 				addFrom.removeItemAt(addFrom.getItemCount() - 1);
 				addTo.removeItemAt(addTo.getItemCount()- 1);
 				swapFrom.removeItemAt(swapFrom.getItemCount()- 1);
@@ -352,10 +323,10 @@ public class UI extends JFrame{
 			console.setCaretPosition(console.getDocument().getLength());
 		}
 	}
-	public void toDocx(String s){
+/*	public void toDocx(String s){
 		if(option2.isSelected()){
 			docX.addMatrix(matrix, s);
 		}
-	}
+	}*/
 	
 }
