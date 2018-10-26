@@ -5,11 +5,8 @@ import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.text.NumberFormatter;
 
-//NEED TO REPLACE THE SHITTY MAX SIZED ARRAY WITH AN ARRAY LIST AND CHANGE ACCORDIGNLY
-//ITERATION FOR LOOPS WITH FOR EACH LOOPS. Also separate logic from UI (sux2sucktbh)
 @SuppressWarnings("serial")
 public class UI extends JFrame{
-	private Matrix matrix = new Matrix();
 	//using Integer since ComboBox doesn't take primitives
 	private Integer[] sizeOptions = {1,2,3,4,5};
 	private ArrayList<ArrayList<JFormattedTextField>> inputMatrix = new ArrayList<ArrayList<JFormattedTextField>>();
@@ -22,9 +19,8 @@ public class UI extends JFrame{
 	private JCheckBox option1, option2;
 	private JTextArea console;
 	private JScrollPane consoleContainer;
-	private DocXManager docX = new DocXManager(this);
 	
-	public UI(){
+	public UI(OperationsManager opsManager){
 		ArrayList<Image> icons = new ArrayList<Image>();
 		icons.add(new ImageIcon(ClassLoader.getSystemResource("MatrixIconLarge.png")).getImage());
 		icons.add(new ImageIcon(ClassLoader.getSystemResource("MatrixIconSmall.png")).getImage());
@@ -129,9 +125,6 @@ public class UI extends JFrame{
 		consoleContainer = new JScrollPane(console);
 		consoleContainer.setPreferredSize(new Dimension(425,175));
 		
-		//since the default combo box options are 1,2,3,4,5; we call this function to set them to the matrix size
-		resizeComboBoxes();
-		
 		cp.add(controls, BorderLayout.NORTH);
 		cp.add(gridFixer, BorderLayout.WEST);
 		cp.add(operationsPanel, BorderLayout.EAST);
@@ -142,15 +135,13 @@ public class UI extends JFrame{
 		rowsSelector.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				JComboBox<?> cb = (JComboBox<?>)e.getSource();
-				matrix.setDimensions((int)cb.getSelectedItem(), matrix.getColumns());
-				buildUI();
+				opsManager.setRows((int)cb.getSelectedItem());
 			}
 		});
 		columnsSelector.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				JComboBox<?> cb = (JComboBox<?>)e.getSource();
-				matrix.setDimensions(matrix.getRows(), (int)cb.getSelectedItem());
-				buildUI();
+				opsManager.setColumns((int)cb.getSelectedItem());
 			}
 		});
 		clear.addActionListener(new ActionListener(){
@@ -165,58 +156,53 @@ public class UI extends JFrame{
 		});
 		add.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				updateMatrix();
-				matrix.addMultipleOfRowToRow((int)addFrom.getSelectedItem(), (int)addTo.getSelectedItem(), 1);
-				updateUI();
+				opsManager.addMultipleOfRowToRow((int)addFrom.getSelectedItem(), (int)addTo.getSelectedItem(), 1);
 			}
 		});
 		swap.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				updateMatrix();
-				matrix.swapRowWithRow((int)swapFrom.getSelectedItem(), (int)swapTo.getSelectedItem());
-				updateUI();
+				opsManager.swapRowWithRow((int)swapFrom.getSelectedItem(), (int)swapTo.getSelectedItem());
 			}
 		});
 		multiply.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				updateMatrix();
 				if(multiplyBy.getText().contains("/")){
-					matrix.multiplyRow((int)multiplyFrom.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal());
+					opsManager.multiplyRow((int)multiplyFrom.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal());
 				}else{
-					matrix.multiplyRow((int)multiplyFrom.getSelectedItem(), Double.valueOf(multiplyBy.getText()));
+					opsManager.multiplyRow((int)multiplyFrom.getSelectedItem(), Double.valueOf(multiplyBy.getText()));
 				}
-				updateUI();
 			}
 		});
 		multiplyAndAdd.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				updateMatrix();
 				if(multiplyBy.getText().contains("/")){
-					matrix.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal());
+					opsManager.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), new Fraction(multiplyBy.getText()).toDecimal());
 				}else{
-					matrix.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), Double.valueOf(multiplyBy.getText()));		
+					opsManager.addMultipleOfRowToRow((int)multiplyFrom.getSelectedItem(), (int)multiplyTo.getSelectedItem(), Double.valueOf(multiplyBy.getText()));		
 				}
-				updateUI();
 			}
 		});
 		reduceMatrix.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				updateMatrix();
+				/*updateMatrix();
 				matrix.reduce();
-				updateUI();
+				updateUI();*/
 			}
 		});
 		export.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				JFileChooser fileChooser = new JFileChooser();
 				if(fileChooser.showOpenDialog(((Component)e.getSource()).getParent()) == JFileChooser.APPROVE_OPTION){
-					docX.setDocxFile(fileChooser.getSelectedFile());
+					//docX.setDocxFile(fileChooser.getSelectedFile());
 				}
 			}
 		});
 	}
-	//builds the matrix object data into the UI
-	public void buildUI(){
+	public ArrayList<ArrayList<JFormattedTextField>> getInputMatrix(){
+		return inputMatrix;
+	}
+	//builds the matrix object data into the UI (this one is only called on size changes)
+	public void buildMatrixUI(Matrix matrix){
 		//remove all matrix input fields
 		matrixArea.removeAll();
 		matrixArea.revalidate();
@@ -248,20 +234,12 @@ public class UI extends JFrame{
 				matrixArea.add(inputMatrix.get(i).get(j));
  			}
  		}
-		//resize the operation combo boxes to fit the row number that the user picked
-		resizeComboBoxes();
+		//resize the operation combo boxes to fit the matrix's row count
+		resizeComboBoxes(matrix.getRows());
  	}
-	public void updateMatrix(){
-		for(int i = 0; i < 	matrix.getRows(); i++){
-			for(int j = 0; j < matrix.getColumns(); j++){
-				matrix.setValue(i, j, Double.valueOf(inputMatrix.get(i).get(j).getText()));
- 			}
- 		}
- 	}
-	
-	//copies the values back to the text field array for after required operations are done
+
 	//updates the UI with the data from the matrix object
-	public void updateUI(){
+	public void update(Matrix matrix){
 		for(int i = 0; i <  matrix.getRows(); i++){
 			for(int j = 0; j < matrix.getColumns(); j++){
 				inputMatrix.get(i).get(j).setText(String.valueOf(matrix.getValue(i, j)));
@@ -276,10 +254,10 @@ public class UI extends JFrame{
  	}
 	
 	//changes the size of the selection combo boxes to reflect the changes in matrix size
-	public void resizeComboBoxes(){
+	public void resizeComboBoxes(int size){
 		//if the selection list is smaller than the current rows selected by the user, add more items, else remove items
-		if(addFrom.getItemCount() < matrix.getRows()){
-			while(addFrom.getItemCount() != matrix.getRows()){
+		if(addFrom.getItemCount() < size){
+			while(addFrom.getItemCount() != size){
 				addFrom.addItem(addFrom.getItemCount() + 1);
 				addTo.addItem(addTo.getItemCount() + 1);
 				swapFrom.addItem(swapFrom.getItemCount() + 1);
@@ -288,7 +266,7 @@ public class UI extends JFrame{
 				multiplyTo.addItem(multiplyTo.getItemCount()+ 1);
 			}
 		}else{
-			while(addFrom.getItemCount() != matrix.getRows()){
+			while(addFrom.getItemCount() != size){
 				addFrom.removeItemAt(addFrom.getItemCount() - 1);
 				addTo.removeItemAt(addTo.getItemCount()- 1);
 				swapFrom.removeItemAt(swapFrom.getItemCount()- 1);
@@ -304,7 +282,7 @@ public class UI extends JFrame{
 		console.append(s + "\n");
 	}
 	
-	//prints the contents of the matrix (double array) to the console
+	//prints the contents of the text fields to the console
 	public void printMatrixToConsole(ArrayList<ArrayList<Double>> matrix){
 		if(option1.isSelected()){
 			for(ArrayList<Double> arr : matrix){
@@ -328,5 +306,4 @@ public class UI extends JFrame{
 			docX.addMatrix(matrix, s);
 		}
 	}*/
-	
 }

@@ -14,6 +14,6 @@ public class MatrixCalculator{
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-		new UI();
+		new OperationsManager();
 	}
 }
