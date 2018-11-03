@@ -36,8 +36,14 @@ public class OperationsManager{
 			ui.printStringToConsole("Add Row " + row1 + " to Row " + row2);
 			toDocx(String.format("R%d + R%d", row1, row2));
 		}else{
-			ui.printStringToConsole("Multipy Row " + row1 + " By " + (int)value + " and add it to Row " + row2);
-			toDocx(String.format("R%d x %s + R%d", row1, String.valueOf(value), row2));
+			if(value % 1 == 0){
+				ui.printStringToConsole("Multipy Row " + row1 + " By " + (int)value + " and add it to Row " + row2);
+				toDocx(String.format("R%d x %d + R%d", row1, (int)value, row2));
+			}else{
+				ui.printStringToConsole("Multipy Row " + row1 + " By " + Fraction.valueOf(value) + " and add it to Row " + row2);
+				toDocx(String.format("R%d x %s + R%d", row1, Fraction.valueOf(value), row2));
+			}
+			
 		}
 		ui.printMatrixToConsole(matrix);
 		ui.update(matrix);
@@ -46,7 +52,7 @@ public class OperationsManager{
 		updateMatrix(ui.getInputMatrix());
 		if(value % 1 == 0){
 			ui.printStringToConsole("Multipy Row " + row + " By " + (int)value);
-			toDocx(String.format("R%d x %s", row, String.valueOf(value)));
+			toDocx(String.format("R%d x %d", row, (int)value));
 		}else{
 			ui.printStringToConsole("Multipy Row " + row + " By " + Fraction.valueOf(value));
 			toDocx(String.format("R%d x %s", row, Fraction.valueOf(value)));
