@@ -1,8 +1,4 @@
-
-
-import java.awt.Cursor;
 import java.io.File;
-import java.util.ArrayList;
 
 import javax.xml.bind.JAXBElement;
 
@@ -32,24 +28,19 @@ public class DocXManager {
 	private WordprocessingMLPackage wordMLPackage;
 	private MainDocumentPart mainDocument;
 	private File targetFile;
-	private UI ui;
 	//private OperationsManager operations = new OperationsManager(null);
 	
-	public DocXManager(UI ui){
-		this.ui = ui;
+	public DocXManager(){
 	}
 	
-	public void setDocxFile(File targetFile){
+	public String setDocxFile(File targetFile){
 		this.targetFile = targetFile;
 		try{
-			ui.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			wordMLPackage = Docx4J.load(targetFile);
-			ui.printStringToConsole("Document Loaded!");
+			return "Document Loaded!";
 		}catch(Docx4JException e){
 			e.printStackTrace();
-			ui.printStringToConsole("Unable to load document :(");	
-		}finally{
-			ui.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			return "Unable to load document :(";
 		}
 	}
 	
@@ -64,7 +55,7 @@ public class DocXManager {
 		}
 	}
 	
-	public void addMatrix(ArrayList<ArrayList<Double>> matrix, String s){
+	public void addMatrix(Matrix matrix, String s){
 		mainDocument = wordMLPackage.getMainDocumentPart();
 		ObjectFactory mathObjFactory = new ObjectFactory();
 		P paragraph = new P();
@@ -130,10 +121,10 @@ public class DocXManager {
 		matrix.setMPr(matrixPr);*/
 		
 		//each loop adds a matrix row (m:mr element)
-		for(int i = 0; i < matrix.size(); i++){
+		for(int i = 0; i < matrix.getRows(); i++){
 			CTMR matrixRow = mathObjFactory.createCTMR();
 			m.getMr().add(matrixRow);
-			for(int j = 0; j < matrix.get(i).size(); j++){
+			for(int j = 0; j < matrix.getColumns(); j++){
 				//for future fraction support in the word document
 			/*	if(fraction){
 					
@@ -153,17 +144,17 @@ public class DocXManager {
 	            rpr.setRFonts(rfonts); 
 				CTText text = mathObjFactory.createCTText();
 				JAXBElement<CTText> textWrapper = mathObjFactory.createCTRTMath(text);
-				if(matrix.get(i).get(j) % 1 != 0){
-					text.setValue(new Fraction(matrix.get(i).get(j)).toString()); 
+				if(matrix.getValue(i, j) % 1 != 0){
+					text.setValue(new Fraction(matrix.getValue(i, j)).toString()); 
 				}else{
-					text.setValue(String.valueOf(matrix.get(i).get(j).intValue())); 
+					text.setValue(String.valueOf((int)matrix.getValue(i, j))); 
 				}	 
 			    mR.getContent().add(textWrapper); 	   
 			}
 		}
 		try{
 			wordMLPackage.save(targetFile);
-			ui.printStringToConsole("Saved to Docx!");
+			//ui.printStringToConsole("Saved to Docx!");
 		}catch(Docx4JException e){
 			e.printStackTrace();
 		}
